@@ -64,7 +64,7 @@ ROS3D.MarkerArrayClient = function(options) {
           var m = that.markers[message.ns + message.id];
           updated = m.children[0].update(message);
           if(!updated) { // REMOVE
-              m..unsubscribeTf();
+              m.unsubscribeTf();
               markerScene(m.object).remove(m);
               delete that.markers[message.ns + message.id];
           }
@@ -93,7 +93,7 @@ ROS3D.MarkerArrayClient = function(options) {
         
         var m = that.markers[message.ns + message.id];
         if(m) {
-            m..unsubscribeTf();
+            m.unsubscribeTf();
             markerScene(m.object).remove(m);
             delete that.markers[message.ns + message.id];
         }
