@@ -20,6 +20,11 @@ ROS3D.MARKER_POINTS = 8;
 ROS3D.MARKER_TEXT_VIEW_FACING = 9;
 ROS3D.MARKER_MESH_RESOURCE = 10;
 ROS3D.MARKER_TRIANGLE_LIST = 11;
+ROS3D.MARKER_BACKGROUND_IMAGE = 999995;
+ROS3D.MARKER_IMAGE_HUD = 999996;
+ROS3D.MARKER_TEXT_HUD = 999997;
+ROS3D.MARKER_SPRITE = 999998;
+ROS3D.MARKER_TEXT_SPRITE = 999999;
 
 // Interactive marker feedback types
 ROS3D.INTERACTIVE_MARKER_KEEP_ALIVE = 0;
@@ -61,9 +66,9 @@ ROS3D.makeColorMaterial = function(r, g, b, a) {
   var color = new THREE.Color();
   color.setRGB(r, g, b);
   if (a <= 0.99) {
-    return new THREE.MeshBasicMaterial({
+    return new THREE.MeshPhongMaterial({
       color : color.getHex(),
-      opacity : a + 0.1,
+      opacity : a,
       transparent : true,
       depthWrite : true,
       blendSrc : THREE.SrcAlphaFactor,

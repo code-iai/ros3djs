@@ -21,6 +21,7 @@ ROS3D.MeshResource = function(options) {
   var that = this;
   options = options || {};
   var path = options.path || '/';
+  var scale = options.scale || [1,1,1];
   var resource = options.resource;
   var material = options.material || null;
   this.warnings = options.warnings;
@@ -52,17 +53,44 @@ ROS3D.MeshResource = function(options) {
     loader.load(uri, function colladaReady(collada) {
       // check for a scale factor in ColladaLoader2
       if(loaderType === ROS3D.COLLADA_LOADER_2 && collada.dae.asset.unit) {
-        var scale = collada.dae.asset.unit;
-        collada.scene.scale = new THREE.Vector3(scale, scale, scale);
+        collada.scene.scale = new THREE.Vector3(
+          scale[0]*collada.dae.asset.unit,
+          scale[1]*collada.dae.asset.unit,
+          scale[2]*collada.dae.asset.unit);
       }
-
-      // add a texture to anything that is missing one
+      else {
+        collada.scene.scale = new THREE.Vector3(scale[0], scale[1], scale[2]);
+      }
+      collada.scene.scale_unit = collada.dae.asset.unit;
+      
+      // Remember material defined in mesh in order to allow resetting
+      // highlight material to mesh material.
+      var setDefaultMaterial = function(node) {
+          node.default_material = node.material;
+          if (node.children) {
+              for (var i = 0; i < node.children.length; i++) {
+                  setDefaultMaterial(node.children[i]);
+              }
+          }
+      };
+      setDefaultMaterial(collada.scene);
+      
       if(material !== null) {
         var setMaterial = function(node, material) {
-          node.material = material;
-          if (node.children) {
-            for (var i = 0; i < node.children.length; i++) {
-              setMaterial(node.children[i], material);
+          // NOTE(daniel): node.material.map is defined even if loading failed.
+          // But texture size is set to zero then.
+          // Don't use the mesh material if this is the case.
+          var hasMap = false;
+          if (node.material && node.material.map) {
+            hasMap = (node.material.map.image.width * node.material.map.image.height) > 0;
+          }
+    
+          if (!hasMap) {
+            node.material = material;
+            if (node.children) {
+                for (var i = 0; i < node.children.length; i++) {
+                    setMaterial(node.children[i], material);
+                }
             }
           }
         };
@@ -74,6 +102,11 @@ ROS3D.MeshResource = function(options) {
     });
   } else if (fileType === '.stl') {
     loader = new THREE.STLLoader();
+    loader.addEventListener( 'error', function ( event ) {
+      if (that.warnings) {
+        console.warn(event.message);
+      }
+    });
     {
       loader.load(uri, function ( geometry ) {
         geometry.computeFaceNormals();
@@ -81,8 +114,10 @@ ROS3D.MeshResource = function(options) {
         if(material !== null) {
           mesh = new THREE.Mesh( geometry, material );
         } else {
-          mesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x999999 } ) );
+          mesh = new THREE.Mesh( geometry, new THREE.MeshPhongMaterial( { color: 0x999999, blending : THREE.NormalBlending } ) );
         }
+        mesh.scale = new THREE.Vector3(scale[0], scale[1], scale[2]);
+        mesh.scale_unit = 1.0;
         that.add(mesh);
       } );
     }

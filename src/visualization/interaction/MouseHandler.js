@@ -19,6 +19,7 @@ ROS3D.MouseHandler = function(options) {
   this.camera = options.camera;
   this.rootObject = options.rootObject;
   this.fallbackTarget = options.fallbackTarget;
+  this.on_window_dblclick = options.on_window_dblclick;
   this.lastTarget = this.fallbackTarget;
   this.dragging = false;
   this.projector = new THREE.Projector();
@@ -85,15 +86,17 @@ ROS3D.MouseHandler.prototype.processDomEvent = function(domEvent) {
     intersection : this.lastIntersection
   };
 
-  // if the mouse leaves the dom element, stop everything
+  // if the mouse leaves the dom element (and is not dragging), stop everything
   if (domEvent.type === 'mouseout') {
-    if (this.dragging) {
-      this.notify(this.lastTarget, 'mouseup', event3D);
-      this.dragging = false;
+    //if (this.dragging) {
+    //  this.notify(this.lastTarget, 'mouseup', event3D);
+    //  this.dragging = false;
+    //}
+    if (!this.dragging) {
+      this.notify(this.lastTarget, 'mouseout', event3D);
+      this.lastTarget = null;
+      return;
     }
-    this.notify(this.lastTarget, 'mouseout', event3D);
-    this.lastTarget = null;
-    return;
   }
 
   // if the touch leaves the dom element, stop everything
@@ -157,6 +160,10 @@ ROS3D.MouseHandler.prototype.processDomEvent = function(domEvent) {
         this.notify(this.lastTarget, 'touchend', event3D);
       }
     }
+  }
+  
+  if (domEvent.type === 'dblclick' && intersections.length==0) {
+      this.on_window_dblclick();
   }
 
   // pass through event
