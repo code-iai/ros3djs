@@ -158,7 +158,9 @@ ROS3D.Viewer = function(options) {
   }
 
   // add the renderer to the page
-  document.getElementById(divID).appendChild(this.renderer.domElement);
+  // TODO(daniel): not using document.getElementById(divID) here due to frames
+  //document.getElementById(divID).appendChild(this.renderer.domElement);
+  divID.appendChild(this.renderer.domElement);
 
   // begin the animation
   draw();
