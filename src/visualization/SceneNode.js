@@ -17,8 +17,8 @@
 ROS3D.SceneNode = function(options) {
   options = options || {};
   var that = this;
-  var tfClient = options.tfClient;
-  var frameID = options.frameID;
+  this.frameID = options.frameID;
+  this.tfClient = options.tfClient;
   this.object = options.object;
   this.pose = options.pose || new ROSLIB.Pose();
 
@@ -43,7 +43,7 @@ ROS3D.SceneNode = function(options) {
   };
 
   // listen for TF updates
-  tfClient.subscribe(frameID, this.tfUpdate);
+  this.tfClient.subscribe(this.frameID, this.tfUpdate);
 };
 ROS3D.SceneNode.prototype.__proto__ = THREE.Object3D.prototype;
 
@@ -60,5 +60,5 @@ ROS3D.SceneNode.prototype.updatePose = function(pose) {
 };
 
 ROS3D.SceneNode.prototype.unsubscribeTf = function() {
-  this.tfClient.unsubscribe(this.message.header.frame_id, this.tfUpdate);
+  this.tfClient.unsubscribe(this.frameID, this.tfUpdate);
 };
