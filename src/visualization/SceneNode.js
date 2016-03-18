@@ -18,9 +18,9 @@ ROS3D.SceneNode = function(options) {
   options = options || {};
   var that = this;
   this.frameID = options.frameID;
-  this.tfClient = options.tfClient;
   this.object = options.object;
   this.pose = options.pose || new ROSLIB.Pose();
+  this.tfClient = options.tfClient;
 
   THREE.Object3D.call(this);
 
