@@ -20,6 +20,7 @@ ROS3D.Marker = function(options) {
   var path = options.path || '/';
   var message = options.message;
   var loader = options.loader || ROS3D.COLLADA_LOADER_2;
+  var client = options.client;
   var that = this;
 
   // check for a trailing '/'
@@ -40,6 +41,7 @@ ROS3D.Marker = function(options) {
   this.msgText = message.text;
   this.isBackgroundMarker = false;
   this.isSelectable = true;
+  this.isSceneOrtho = false;
   this.id = message.id;
   this.ns = message.ns;
   this.frame_id = message.header.frame_id;
@@ -395,6 +397,7 @@ ROS3D.Marker = function(options) {
     case ROS3D.MARKER_IMAGE_HUD:
     case ROS3D.MARKER_TEXT_HUD:
       this.isSelectable = false;
+      this.isSceneOrtho = true;
       if(message.type==ROS3D.MARKER_IMAGE_HUD) {
           createSprite(createTexture(message.text), true);
       }
@@ -410,6 +413,7 @@ ROS3D.Marker = function(options) {
       break;
     case ROS3D.MARKER_TEXT_SPRITE:
     case ROS3D.MARKER_SPRITE:
+    case ROS3D.MARKER_SPRITE_SCALED:
       this.isSelectable = false;
       if(message.type==ROS3D.MARKER_SPRITE) {
           createSprite(createTexture(message.text), false);
@@ -420,6 +424,16 @@ ROS3D.Marker = function(options) {
               function(sprite) {
                   var sprite = createSprite(sprite.texture,false);
                   addEventListener(sprite);
+                  
+                  if(message.type==ROS3D.MARKER_SPRITE_SCALED) {
+                      client.addEventListener('render', function(camera,scene) {
+                          var v = new THREE.Vector3();
+                          var scale_factor = 4;
+                          sprite.scale.x = sprite.scale.y = v.subVectors(
+                              sprite.position, camera.camera.position ).length() / scale_factor;
+                          
+                      });
+                  }
               }
           );
       }
@@ -573,6 +587,7 @@ ROS3D.Marker.prototype.update = function(message) {
         break;
     case ROS3D.MARKER_SPRITE:
     case ROS3D.MARKER_TEXT_SPRITE:
+    case ROS3D.MARKER_SPRITE_SCALED:
         var sprite = this.children[0];
         if(this.msgText !== message.text) return false;
         if(Math.abs(this.msgScale[2] - message.scale.z) > 1.0e-6) return false;

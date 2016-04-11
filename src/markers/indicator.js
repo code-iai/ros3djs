@@ -13,7 +13,10 @@ function IndicatorSprite(html, options, then){
     this.canvas = document.createElement('canvas');
     this.texture = undefined;
     
-    var html_container = document.getElementById('measure-container');
+    
+    var html_container = document.createElement("div");
+    //document.getElementById('page').appendChild(measure);
+    //var html_container = document.getElementById('measure-container');
     html_container.innerHTML = html;
     
     var html_canvas = document.createElement('canvas');
