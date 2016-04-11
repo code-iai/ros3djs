@@ -423,15 +423,18 @@ ROS3D.Marker = function(options) {
               { useBubble: true },
               function(sprite) {
                   var sprite = createSprite(sprite.texture,false);
+                  var v = new THREE.Vector3();
+                  var scale_factor = 4;
+                  
                   addEventListener(sprite);
                   
                   if(message.type==ROS3D.MARKER_SPRITE_SCALED) {
-                      client.addEventListener('render', function(camera,scene) {
-                          var v = new THREE.Vector3();
-                          var scale_factor = 4;
-                          sprite.scale.x = sprite.scale.y = v.subVectors(
-                              sprite.position, camera.camera.position ).length() / scale_factor;
-                          
+                      // TODO(daniel): handler must be removed again!!!
+                      sprite.init_scale = new THREE.Vector3(sprite.scale.x, sprite.scale.y, 1.0);
+                      client.on('render', function(event) {
+                          var val =  v.subVectors(sprite.position, event.camera.position).length() / scale_factor;
+                          sprite.scale.x = sprite.init_scale.x * val;
+                          sprite.scale.y = sprite.init_scale.y * val;
                       });
                   }
               }

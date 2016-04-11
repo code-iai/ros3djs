@@ -25,6 +25,7 @@
  */
 ROS3D.MarkerArrayClient = function(options) {
   var that = this;
+  
   options = options || {};
   var ros = options.ros;
   var topic = options.topic;
@@ -38,6 +39,8 @@ ROS3D.MarkerArrayClient = function(options) {
   this.on_dblclick = options.on_dblclick || function(_) { };
   this.on_contextmenu = options.on_contextmenu || function(_) { };
   this.on_delete = options.on_delete || function(_) { };
+  
+  this.setMaxListeners(0);
   
   // Markers that are displayed (Map ns+id--Marker)
   this.markers = {};

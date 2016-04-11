@@ -129,10 +129,10 @@ ROS3D.Viewer = function(options) {
   this.backgroundCamera = new THREE.Camera();
   this.backgroundScene.add(this.backgroundCamera);
   
-  var renderEvent = new CustomEvent('render', {
+  var renderEvent = {
       'camera': that.camera,
       'scene': that.scene
-  });
+  };
   
   /**
    * Renders the associated scene to the viewer.
@@ -142,7 +142,7 @@ ROS3D.Viewer = function(options) {
     that.cameraControls.update();
     
     // notify listener about the draw call
-    that.dispatchEvent(renderEvent);
+    that.emit('render', renderEvent);
 
     // put light to the top-left of the camera
     //that.directionalLight.position = that.camera.localToWorld(new THREE.Vector3(-1, 1, 0));
@@ -196,3 +196,5 @@ ROS3D.Viewer.prototype.resize = function(width, height) {
   this.camera.updateProjectionMatrix();
   this.renderer.setSize(width, height);
 };
+
+ROS3D.Viewer.prototype.__proto__ = EventEmitter2.prototype;

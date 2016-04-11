@@ -24,6 +24,7 @@
  */
 ROS3D.MarkerClient = function(options) {
   var that = this;
+  
   options = options || {};
   var ros = options.ros;
   var topic = options.topic;
@@ -34,6 +35,8 @@ ROS3D.MarkerClient = function(options) {
   this.orthogonalObjects = options.orthogonalObjects || new THREE.Object3D();
   this.path = options.path || '/';
   this.loader = options.loader || ROS3D.COLLADA_LOADER_2;
+  
+  this.setMaxListeners(0);
 
   // Markers that are displayed (Map ns+id--Marker)
   this.markers = {};
