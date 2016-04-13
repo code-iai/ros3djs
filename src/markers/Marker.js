@@ -71,7 +71,7 @@ ROS3D.Marker = function(options) {
       var alignment = Math.max(Math.min(Math.round(message.scale.z), that.spriteAlignments.length-1),0);
       return new THREE.SpriteMaterial({
           useScreenCoordinates: useScreenCoordinates,
-          alignment: that.spriteAlignments[alignment]
+          alignment: THREE.SpriteAlignment.bottomLeft
       });
   };
   var createTexture = function(src) {
@@ -89,12 +89,14 @@ ROS3D.Marker = function(options) {
       material.map = texture;
       var sprite = new THREE.Sprite(material);
       if(useScreenCoordinates) {
-          sprite.scale.set(material.map.image.width, material.map.image.height, 1);
+          sprite.scale.set(
+              message.scale.z*material.map.image.width,
+              message.scale.z*material.map.image.height, 1);
           sprite.position.set(message.pose.position.x, message.pose.position.y, 0);
       } else {
           sprite.scale = new THREE.Vector3(
-              message.scale.x*material.map.image.width/100.0,
-              message.scale.y*material.map.image.height/100.0, 1.0);
+              message.scale.z*material.map.image.width/100.0,
+              message.scale.z*material.map.image.height/100.0, 1.0);
       }
       that.add(sprite);
       return sprite;
@@ -402,11 +404,14 @@ ROS3D.Marker = function(options) {
           createSprite(createTexture(message.text), true);
       }
       else {
-          new IndicatorSprite(message.text,
-              { useBubble: false },
+          new IndicatorSprite(message.text, {
+                    useBubble: false,
+                    width: message.scale.x,
+                    height: message.scale.y
+              },
               function(sprite) {
-                  var sprite = createSprite(sprite.texture,true);
-                  addEventListener(sprite);
+                  var x = createSprite(sprite.texture,true);
+                  addEventListener(x);
               }
           );
       }
@@ -419,22 +424,26 @@ ROS3D.Marker = function(options) {
           createSprite(createTexture(message.text), false);
       }
       else {
-          new IndicatorSprite(message.text,
-              { useBubble: true },
+          new IndicatorSprite(message.text, {
+                    useBubble: true,
+                    width: message.scale.x,
+                    height: message.scale.y,
+                    bubbleColor: htmlColor(this.msgColor)
+              },
               function(sprite) {
-                  var sprite = createSprite(sprite.texture,false);
+                  var x = createSprite(sprite.texture,false);
                   var v = new THREE.Vector3();
                   var scale_factor = 4;
                   
-                  addEventListener(sprite);
+                  addEventListener(x);
                   
                   if(message.type==ROS3D.MARKER_SPRITE_SCALED) {
                       // TODO(daniel): handler must be removed again!!!
-                      sprite.init_scale = new THREE.Vector3(sprite.scale.x, sprite.scale.y, 1.0);
+                      x.init_scale = new THREE.Vector3(x.scale.x, x.scale.y, 1.0);
                       client.on('render', function(event) {
-                          var val =  v.subVectors(sprite.position, event.camera.position).length() / scale_factor;
-                          sprite.scale.x = sprite.init_scale.x * val;
-                          sprite.scale.y = sprite.init_scale.y * val;
+                          var val =  v.subVectors(x.position, event.camera.position).length() / scale_factor;
+                          x.scale.x = x.init_scale.x * val;
+                          x.scale.y = x.init_scale.y * val;
                       });
                   }
               }
@@ -593,12 +602,8 @@ ROS3D.Marker.prototype.update = function(message) {
     case ROS3D.MARKER_SPRITE_SCALED:
         var sprite = this.children[0];
         if(this.msgText !== message.text) return false;
-        if(Math.abs(this.msgScale[2] - message.scale.z) > 1.0e-6) return false;
         if(colorChanged) return false;
-        if(scaleChanged) {
-            var ratio = sprite.material.map.image.width/sprite.material.map.image.height;
-            sprite.scale.set(message.scale.x*ratio, message.scale.y, 1.0);
-        }
+        if(scaleChanged) return false;
         break;
     case ROS3D.MARKER_BACKGROUND_IMAGE:
         if(this.msgText !== message.text) return false;

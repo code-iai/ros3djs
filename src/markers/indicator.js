@@ -7,21 +7,17 @@ function IndicatorSprite(html, options, then){
     // Font options
     var useBubble = options.useBubble || false;
     var margin = options.margin || [6, 6];
+    var width = options.width || 200;
+    var height = options.height || 150;
     var bubbleRadius = 12;
     var bubblePeak = [15, 20, 0]; // width, height, x-offset
     // Create a canvas for 2D rendering
     this.canvas = document.createElement('canvas');
     this.texture = undefined;
     
-    
-    var html_container = document.createElement("div");
-    //document.getElementById('page').appendChild(measure);
-    //var html_container = document.getElementById('measure-container');
-    html_container.innerHTML = html;
-    
     var html_canvas = document.createElement('canvas');
-    html_canvas.height = html_container.clientHeight;
-    html_canvas.width = html_container.clientWidth;
+    html_canvas.height = height;
+    html_canvas.width = width;
     
     rasterizeHTML.drawHTML(html, html_canvas).then(function (renderResult) {
         // The canvas size
