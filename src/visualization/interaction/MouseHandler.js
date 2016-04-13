@@ -62,8 +62,8 @@ ROS3D.MouseHandler.prototype.processDomEvent = function(domEvent) {
     pos_y /= domEvent.touches.length;
   }
   else {
-	pos_x = domEvent.clientX;
-	pos_y = domEvent.clientY;
+    pos_x = domEvent.clientX;
+    pos_y = domEvent.clientY;
   }
   var left = pos_x - rect.left - target.clientLeft + target.scrollLeft;
   var top = pos_y - rect.top - target.clientTop + target.scrollTop;
@@ -119,12 +119,19 @@ ROS3D.MouseHandler.prototype.processDomEvent = function(domEvent) {
     }
     return;
   }
+  
+  var allowRedirectToObject = true;
+  if (domEvent.type === 'mousewheel' ||
+      domEvent.type === 'DOMMouseScroll'
+  ) {
+      allowRedirectToObject = false;
+  }
 
   // in the normal case, we need to check what is under the mouse
   target = this.lastTarget;
   var intersections = [];
   intersections = mouseRaycaster.intersectObject(this.rootObject, true);
-  if (intersections.length > 0) {
+  if (allowRedirectToObject && intersections.length > 0) {
     target = intersections[0].object;
     event3D.intersection = this.lastIntersection = intersections[0];
   } else {
