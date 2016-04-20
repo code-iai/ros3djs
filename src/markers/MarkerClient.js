@@ -24,6 +24,7 @@
  */
 ROS3D.MarkerClient = function(options) {
   var that = this;
+  
   options = options || {};
   var ros = options.ros;
   var topic = options.topic;
@@ -31,8 +32,11 @@ ROS3D.MarkerClient = function(options) {
   this.selectableObjects = options.selectableObjects || new THREE.Object3D();
   this.sceneObjects = options.sceneObjects || new THREE.Object3D();
   this.backgroundObjects = options.backgroundObjects || new THREE.Object3D();
+  this.orthogonalObjects = options.orthogonalObjects || new THREE.Object3D();
   this.path = options.path || '/';
   this.loader = options.loader || ROS3D.COLLADA_LOADER_2;
+  
+  this.setMaxListeners(0);
 
   // Markers that are displayed (Map ns+id--Marker)
   this.markers = {};
@@ -40,6 +44,7 @@ ROS3D.MarkerClient = function(options) {
   var markerScene = function(m) {
       if(m.isBackgroundMarker) { return that.backgroundObjects; }
       else if(m.isSelectable) { return that.selectableObjects; }
+      else if(m.isSceneOrtho) { return that.orthogonalObjects; }
       else { return that.sceneObjects; }
   };
 
@@ -55,7 +60,8 @@ ROS3D.MarkerClient = function(options) {
     var newMarker = new ROS3D.Marker({
       message : message,
       path : that.path,
-      loader : that.loader
+      loader : that.loader,
+      client : that
     });
 
     // remove old marker from Three.Object3D children buffer

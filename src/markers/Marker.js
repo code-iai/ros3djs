@@ -3,128 +3,6 @@
  * @author Russell Toris - rctoris@wpi.edu
  */
 
-function TextTexture(text, options){
-    var lines = text.split('\n');
-    var that = this;
-    // Font options
-    var font = options.font || "Bold 24px Monospace";
-    var useShadow = options.useShadow || false;
-    var useBubble = options.useBubble || false;
-    var margin = options.margin || [12, 12];
-    var lineHeight = 24;
-    var shadowOffsetX = (!isNaN(options.shadowOffsetX) && options.shadowOffsetX) || 4;
-    var shadowOffsetY = (!isNaN(options.shadowOffsetY) && options.shadowOffsetY) || 4;
-    var shadowBlur = (!isNaN(options.shadowBlur) && options.shadowBlur) || 6;
-    // Create a canvas for 2D rendering
-    this.canvas = document.createElement('canvas');
-    
-    // Compute size of the canvas so that it fits the text.
-    // We need a special context for measuring the size.
-    var maxWidth = 0;
-    var heightSum = 0;
-    var measure_ctx = this.canvas.getContext('2d');
-    measure_ctx.font = font;
-    for(var i=0; i<lines.length; i++) {
-        var m = measure_ctx.measureText(lines[i]);
-        if(m.width>maxWidth) maxWidth = m.width;
-        heightSum += m.height;
-    }
-    // The text size
-    var tw = maxWidth;
-    var th = lineHeight*lines.length;
-    // The canvas size
-    var cw = tw + margin[0];
-    var ch = th + 0.5*margin[1];
-        
-    var bubbleRadius = 10;
-    var bubblePeak = [15, 20, 0]; // width, height, x-offset
-    if(useBubble) {
-        cw += bubbleRadius*2;
-        ch += bubbleRadius*2 + bubblePeak[1];
-    }
-    if(useShadow) {
-        cw += shadowOffsetX + shadowBlur;
-        ch += shadowOffsetY + shadowBlur;
-    }
-        
-    // Create context with appropriate canvas size 
-    this.ctx = this.canvas.getContext('2d');
-    this.ctx.canvas.width  = cw;
-    this.ctx.canvas.height = ch;
-        
-    if(useBubble) {
-        this.ctx.beginPath();
-        this.ctx.strokeStyle = options.bubbleBorderColor || "black";
-        this.ctx.lineWidth   = options.bubbleBorderWidth || "1";
-        this.ctx.fillStyle   = options.bubbleColor || "rgba(255, 255, 255, 0.8)";
-        
-        var ls = 1;
-        var w = tw + 2*bubbleRadius;
-        var h = th + 2*bubbleRadius;
-        var px=0, py=0;
-        
-        // TODO: is there really no "getPenPosition" method ?
-        var moveTo = function(x,y) {
-            that.ctx.moveTo(x,y);
-            px=x; py=y;
-        };
-        var lineTo = function(x,y) {
-            that.ctx.lineTo(x,y);
-            px=x; py=y;
-        };
-        var curveTo = function(x,y,maxx,maxy) {
-            var cx = (maxx ? Math.max(x,px) : Math.min(x,px));
-            var cy = (maxy ? Math.max(y,py) : Math.min(y,py));
-            that.ctx.quadraticCurveTo(cx,cy,x,y);
-            px=x; py=y;
-        };
-        
-        moveTo(w-bubbleRadius, h-ls);
-        // bottom right
-        curveTo(w-ls, h-bubbleRadius, 1, 1);
-        lineTo (w-ls, bubbleRadius);
-        // top right
-        curveTo(w-bubbleRadius, ls, 1, 0);
-        lineTo (  bubbleRadius, ls);
-        // top left
-        curveTo(ls, bubbleRadius, 0, 0);
-        lineTo (ls, h-bubbleRadius);
-        // bottom left
-        curveTo(bubbleRadius, h-ls, 0, 1);
-        // the peak
-        lineTo(bubbleRadius + bubblePeak[2], h-ls);
-        //lineTo(px + 0.5*bubblePeak[0], h-ls+bubblePeak[1]);
-        lineTo(1, h-ls+bubblePeak[1]);
-        lineTo(bubbleRadius + bubblePeak[2] + bubblePeak[0], h-ls);
-        lineTo(w-bubbleRadius, h-ls);
-        
-        this.ctx.fill();
-        this.ctx.stroke();
-        this.ctx.closePath();
-    }
-        
-    this.ctx.font = font;
-    // Configure text shadow
-    if(useShadow) {
-        this.ctx.shadowColor = options.shadowColor || "gray";
-        this.ctx.shadowOffsetX = shadowOffsetX;
-        this.ctx.shadowOffsetY = shadowOffsetY;
-        this.ctx.shadowBlur = shadowBlur;
-    }
-    // Configure text
-    this.ctx.fillStyle = options.fillStyle || "#144F78";
-    this.ctx.strokeStyle = options.strokeStyle || "#000000";
-    // Render text into 2D canvas
-    for(var i=0; i<lines.length; i++) {
-        //ctx.strokeText(lines[i], 0.5*margin[0], (i+1)*lineHeight);
-        this.ctx.fillText(lines[i], margin[0], 0.5*margin[1] + (i+1)*lineHeight);
-    }
-        
-    // Finally create texture from canvas
-    this.texture = new THREE.Texture(this.canvas);
-    this.texture.needsUpdate = true;
-};
-
 /**
  * A Marker can convert a ROS marker message into a THREE object.
  *
@@ -137,10 +15,12 @@ function TextTexture(text, options){
  *                         ROS3D.COLLADA_LOADER_2) -- defaults to ROS3D.COLLADA_LOADER_2
  */
 ROS3D.Marker = function(options) {
+  var that = this;
   options = options || {};
   var path = options.path || '/';
   var message = options.message;
   var loader = options.loader || ROS3D.COLLADA_LOADER_2;
+  var client = options.client;
   var that = this;
 
   // check for a trailing '/'
@@ -161,6 +41,7 @@ ROS3D.Marker = function(options) {
   this.msgText = message.text;
   this.isBackgroundMarker = false;
   this.isSelectable = true;
+  this.isSceneOrtho = false;
   this.id = message.id;
   this.ns = message.ns;
   this.frame_id = message.header.frame_id;
@@ -190,7 +71,7 @@ ROS3D.Marker = function(options) {
       var alignment = Math.max(Math.min(Math.round(message.scale.z), that.spriteAlignments.length-1),0);
       return new THREE.SpriteMaterial({
           useScreenCoordinates: useScreenCoordinates,
-          alignment: that.spriteAlignments[alignment]
+          alignment: THREE.SpriteAlignment.bottomLeft
       });
   };
   var createTexture = function(src) {
@@ -203,12 +84,41 @@ ROS3D.Marker = function(options) {
       };
       return texture;
   };
+  var createSprite = function(texture,useScreenCoordinates) {
+      var material = createSpriteMaterial(useScreenCoordinates);
+      material.map = texture;
+      var sprite = new THREE.Sprite(material);
+      if(useScreenCoordinates) {
+          sprite.scale.set(
+              message.scale.z*material.map.image.width,
+              message.scale.z*material.map.image.height, 1);
+          sprite.position.set(message.pose.position.x, message.pose.position.y, 0);
+      } else {
+          sprite.scale = new THREE.Vector3(
+              message.scale.z*material.map.image.width/100.0,
+              message.scale.z*material.map.image.height/100.0, 1.0);
+      }
+      that.add(sprite);
+      return sprite;
+  };
   var htmlColor = function(c) {
       return "rgba("+
         Math.round(c[0]*255.0)+","+
         Math.round(c[1]*255.0)+","+
         Math.round(c[2]*255.0)+","+
         Math.round(c[3]*255.0)+")";
+  };
+  var addEventListener = function(child){
+    child.addEventListener('dblclick', function(ev){
+        if(that.lastEvent === ev) return;
+        that.on_dblclick(that);
+        that.lastEvent = ev;
+    });
+    child.addEventListener('contextmenu', function(ev){
+        if(that.lastEvent === ev) return;
+        that.on_contextmenu(that);
+        that.lastEvent = ev;
+    });
   };
 
   // create the object based on the type
@@ -364,6 +274,38 @@ ROS3D.Marker = function(options) {
       this.add(object);
       break;
     case ROS3D.MARKER_SPHERE_LIST:
+      // holds the main object
+      var sphereObject = new THREE.Object3D();
+      
+      // check if custom colors should be used
+      var numSpherePoints = message.points.length;
+      var createSphereColors = (numSpherePoints === message.colors.length);
+      // do not render giant lists
+      var sphereStepSize = Math.ceil(numSpherePoints / 1250);
+        
+      // add the points
+      var q, sphere, curSphereColor, newSphereMesh;
+      for (q = 0; q < numSpherePoints; q+=sphereStepSize) {
+        sphere = new THREE.SphereGeometry(0.5, 8, 8);
+        
+        // check the color
+        if(createSphereColors) {
+          curSphereColor = ROS3D.makeColorMaterial(message.colors[q].r, message.colors[q].g, message.colors[q].b, message.colors[q].a);
+        } else {
+          curSphereColor = colorMaterial;
+        }
+        
+        newSphereMesh = new THREE.Mesh(sphere, curSphereColor);
+        newSphereMesh.scale.x = message.scale.x;
+        newSphereMesh.scale.y = message.scale.y;
+        newSphereMesh.scale.z = message.scale.z;
+        newSphereMesh.position.x = message.points[q].x;
+        newSphereMesh.position.y = message.points[q].y;
+        newSphereMesh.position.z = message.points[q].z;
+        sphereObject.add(newSphereMesh);
+      }
+      this.add(sphereObject);
+      break;
     case ROS3D.MARKER_POINTS:
       // for now, use a particle system for the lists
       var geometry = new THREE.Geometry();
@@ -457,42 +399,56 @@ ROS3D.Marker = function(options) {
     case ROS3D.MARKER_IMAGE_HUD:
     case ROS3D.MARKER_TEXT_HUD:
       this.isSelectable = false;
-      var material = createSpriteMaterial(true);
+      this.isSceneOrtho = true;
       if(message.type==ROS3D.MARKER_IMAGE_HUD) {
-        material.map = createTexture(message.text);
+          createSprite(createTexture(message.text), true);
       }
       else {
-        var textTexture = new TextTexture(message.text, {
-            fillStyle: htmlColor(this.msgColor),
-            font: "Bold 24px Monospace",
-            useBubble: false
-        });
-        material.map = textTexture.texture;
+          new IndicatorSprite(message.text, {
+                    useBubble: false,
+                    width: message.scale.x,
+                    height: message.scale.y
+              },
+              function(sprite) {
+                  var x = createSprite(sprite.texture,true);
+                  addEventListener(x);
+              }
+          );
       }
-      var sprite = new THREE.Sprite( material );
-      sprite.scale.set(material.map.image.width, material.map.image.height, 1);
-      sprite.position.set(message.pose.position.x, message.pose.position.y, 0);
-      this.add(sprite);
       break;
     case ROS3D.MARKER_TEXT_SPRITE:
     case ROS3D.MARKER_SPRITE:
+    case ROS3D.MARKER_SPRITE_SCALED:
       this.isSelectable = false;
-      var material = createSpriteMaterial(false);
       if(message.type==ROS3D.MARKER_SPRITE) {
-        material.map = createTexture(message.text);
+          createSprite(createTexture(message.text), false);
       }
       else {
-        var textTexture = new TextTexture(message.text, {
-            fillStyle: htmlColor(this.msgColor),
-            font: "Bold 24px Monospace",
-            useBubble: true
-        });
-        material.map = textTexture.texture;
+          new IndicatorSprite(message.text, {
+                    useBubble: true,
+                    width: message.scale.x,
+                    height: message.scale.y,
+                    bubbleColor: htmlColor(this.msgColor)
+              },
+              function(sprite) {
+                  var x = createSprite(sprite.texture,false);
+                  var v = new THREE.Vector3();
+                  var scale_factor = 4;
+                  
+                  addEventListener(x);
+                  
+                  if(message.type==ROS3D.MARKER_SPRITE_SCALED) {
+                      // TODO(daniel): handler must be removed again!!!
+                      x.init_scale = new THREE.Vector3(x.scale.x, x.scale.y, 1.0);
+                      client.on('render', function(event) {
+                          var val =  v.subVectors(x.position, event.camera.position).length() / scale_factor;
+                          x.scale.x = x.init_scale.x * val;
+                          x.scale.y = x.init_scale.y * val;
+                      });
+                  }
+              }
+          );
       }
-      var sprite = new THREE.Sprite(material);
-      var ratio = material.map.image.width/material.map.image.height;
-      sprite.scale = new THREE.Vector3(message.scale.x*ratio, message.scale.y, 1.0);
-      this.add(sprite);
       break;
     case ROS3D.MARKER_BACKGROUND_IMAGE:
       this.isBackgroundMarker = true;
@@ -513,23 +469,7 @@ ROS3D.Marker = function(options) {
       break;
   }
   
-  this.traverse (function (child){
-    child.addEventListener('dblclick', function(ev){
-        if(that.lastEvent === ev) return;
-        that.on_dblclick(that);
-        that.lastEvent = ev;
-    });
-    child.addEventListener('contextmenu', function(ev){
-        if(that.lastEvent === ev) return;
-        that.on_contextmenu(that);
-        that.lastEvent = ev;
-    });
-  });
-  
-  //this.traverse (function (child){
-  //    child.castShadow = true;
-  //    child.receiveShadow = true;
-  //});
+  this.traverse (addEventListener);
 };
 ROS3D.Marker.prototype.__proto__ = THREE.Object3D.prototype;
 
@@ -659,14 +599,11 @@ ROS3D.Marker.prototype.update = function(message) {
         break;
     case ROS3D.MARKER_SPRITE:
     case ROS3D.MARKER_TEXT_SPRITE:
+    case ROS3D.MARKER_SPRITE_SCALED:
         var sprite = this.children[0];
         if(this.msgText !== message.text) return false;
-        if(Math.abs(this.msgScale[2] - message.scale.z) > 1.0e-6) return false;
         if(colorChanged) return false;
-        if(scaleChanged) {
-            var ratio = sprite.material.map.image.width/sprite.material.map.image.height;
-            sprite.scale.set(message.scale.x*ratio, message.scale.y, 1.0);
-        }
+        if(scaleChanged) return false;
         break;
     case ROS3D.MARKER_BACKGROUND_IMAGE:
         if(this.msgText !== message.text) return false;
@@ -681,7 +618,7 @@ ROS3D.Marker.prototype.update = function(message) {
   this.setPose(message.pose);
   
   return true;
-};
+}
 
 /*
  * Free memory of elements in this marker.
@@ -715,3 +652,4 @@ ROS3D.Marker.prototype.dispose = function() {
     element.parent.remove(element);
   });
 };
+
