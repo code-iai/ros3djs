@@ -63,7 +63,7 @@ ROS3D.Viewer = function(options) {
 
   // create the global camera
   //this.camera = new THREE.PerspectiveCamera(40, width / height, near, far);
-  this.camera = new THREE.PerspectiveCamera(70, width / height, near, far);
+  this.camera = new THREE.PerspectiveCamera(81.4, width / height, near, far);
   this.camera.position.x = cameraPosition.x;
   this.camera.position.y = cameraPosition.y;
   this.camera.position.z = cameraPosition.z;
@@ -73,6 +73,7 @@ ROS3D.Viewer = function(options) {
     camera : this.camera
   });
   this.cameraControls.userZoomSpeed = cameraZoomSpeed;
+  this.camera.setViewOffset( 1920, 1080, 370, 164, 1155, 736);
   
   // create the global camera with orthogonal projection
   this.cameraOrtho = new THREE.OrthographicCamera( - width / 2, width / 2, height / 2, - height / 2, 1, 10 );
