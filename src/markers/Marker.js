@@ -529,6 +529,11 @@ ROS3D.Marker.prototype.update = function(message) {
     case ROS3D.MARKER_CUBE:
     case ROS3D.MARKER_SPHERE:
     case ROS3D.MARKER_CYLINDER:
+        if(scaleChanged || colorChanged)
+          return false;
+        // FIXME: below does not work because scale is
+        //   initially taken into account in geometry computation.
+        /*
         if(scaleChanged) {
             this.traverse (function (child){
                 if (child instanceof THREE.Mesh) {
@@ -543,6 +548,7 @@ ROS3D.Marker.prototype.update = function(message) {
                 }
             });
         }
+        */
         break;
     case ROS3D.MARKER_MESH_RESOURCE:
         if(message.mesh_resource.substr(10) !== this.msgMesh) return false;
