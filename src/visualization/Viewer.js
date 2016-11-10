@@ -194,8 +194,20 @@ ROS3D.Viewer.prototype.addObject = function(object, selectable) {
  * @param height - new height value
  */
 ROS3D.Viewer.prototype.resize = function(width, height) {
+  this.camera.width = width;
+  this.camera.height = height;
   this.camera.aspect = width / height;
   this.camera.updateProjectionMatrix();
+  
+  // update orthographic projection
+  this.cameraOrtho.width = width;
+  this.cameraOrtho.height = height;
+  this.cameraOrtho.left = - width / 2;
+  this.cameraOrtho.right = width / 2;
+  this.cameraOrtho.top = height / 2;
+  this.cameraOrtho.bottom = - height / 2;
+  this.cameraOrtho.updateProjectionMatrix();
+  
   this.renderer.setSize(width, height);
 };
 
