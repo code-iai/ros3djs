@@ -464,6 +464,37 @@ ROS3D.Marker = function(options) {
       mesh.renderDepth = 0;
       this.add(mesh);
       break;
+    case ROS3D.MARKER_POINT_LIGHT:
+      this.isSelectable = false;
+      var pointLight = new THREE.PointLight(htmlColor(this.msgColor), message.color.a);
+      pointLight.position.set(0.0,0.0,0.0);
+      this.add( pointLight );
+      break;
+    case ROS3D.MARKER_SPOT_LIGHT:
+      this.isSelectable = false;
+      var spotLight = new THREE.SpotLight(htmlColor(this.msgColor), message.color.a);
+      spotLight.position.set(0.0,0.0,0.0);
+      spotLight.exponent = message.scale.x; // 1
+      spotLight.angle = message.scale.y;    // Math.PI
+      this.add( spotLight );
+      spotLight.target.position.set(0.0,0.0,-1.0);       // default to point down
+      if(client.markers[message.text])
+        spotLight.target = client.markers[message.text]; // look at the target marker
+      else
+        spotLight.add( spotLight.target );               // attach target to light
+      break;
+    case ROS3D.MARKER_DIRECTIONAL_LIGHT:
+      this.isSelectable = false;
+      var dirLight = new THREE.DirectionalLight(htmlColor(this.msgColor), message.color.a);
+      // note that direction is computed from position and target
+      dirLight.position.set(0.0,0.0,0.0);
+      dirLight.target.position.set(0.0,0.0,-1.0);       // default to point down
+      if(client.markers[message.text])
+        dirLight.target = client.markers[message.text]; // look at the target marker
+      else
+        dirLight.add( dirLight.target );                // attach target to light
+      this.add( dirLight );
+      break;
     default:
       console.error('Currently unsupported marker type: ' + message.type);
       break;
@@ -614,6 +645,19 @@ ROS3D.Marker.prototype.update = function(message) {
     case ROS3D.MARKER_BACKGROUND_IMAGE:
         if(this.msgText !== message.text) return false;
         break;
+    case ROS3D.MARKER_SPOT_LIGHT:
+      var spotLight = this.children[0];
+      spotLight.exponent = message.scale.x;
+      spotLight.angle = message.scale.y;
+      // fall through (no break)
+    case ROS3D.MARKER_POINT_LIGHT:
+    case ROS3D.MARKER_DIRECTIONAL_LIGHT:
+      var light = this.children[0];
+      light.intensity = message.color.a;
+      light.color.setRGB(message.color.r,
+                         message.color.g,
+                         message.color.b);
+      break;
     default:
         return false;
   }
