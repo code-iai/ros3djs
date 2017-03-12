@@ -81,35 +81,12 @@ ROS3D.Viewer = function(options) {
 
   // lights
   this.scene.add(new THREE.AmbientLight(0x555555));
-  this.directionalLight = new THREE.DirectionalLight(0xffffff, intensity);
+  /*
+  this.directionalLight = new THREE.DirectionalLight(0x880000, intensity);
   that.directionalLight.position = new THREE.Vector3(-1, -1, 1);
   that.directionalLight.position.normalize();
-  /*
-  if(options.enableShadows) {
-      this.directionalLight.castShadow = true;
-      this.directionalLight.shadowMapWidth = this.directionalLight.shadowMapHeight = 4096;
-      this.directionalLight.shadowCameraNear = 1;
-      this.directionalLight.shadowCameraFar = 50;
-      this.directionalLight.shadowCameraLeft = -5;
-      this.directionalLight.shadowCameraRight = 5;
-      this.directionalLight.shadowCameraTop = 5;
-      this.directionalLight.shadowCameraBottom = -5;
-  }
-  */
   this.scene.add(this.directionalLight);
-  
-  this.spotLight = new THREE.SpotLight( 0xffffcc, 0.9 );
-  this.spotLight.position.set( 0, 0, 10 );
-  this.spotLight.target.position.set( 0, 0, 0 );
-  this.spotLight.angle = Math.PI;
-  this.spotLight.exponent = 1;
-  if(options.enableShadows) {
-      this.spotLight.castShadow = true;
-      this.spotLight.shadowMapWidth = this.directionalLight.shadowMapHeight = 4096;
-      this.spotLight.shadowCameraNear = 1;
-      this.spotLight.shadowCameraFar = 50;
-  }
-  this.scene.add( this.spotLight );
+  */
 
   // propagates mouse events to three.js objects
   this.selectableObjects = new THREE.Object3D();
